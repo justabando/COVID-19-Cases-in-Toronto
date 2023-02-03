@@ -1,118 +1,191 @@
 ---
-title: "A statistical analysis of ongoing COVID-19 cases in Toronto"
-subtitle: "My subtitle if needed"
-author: 
-  - Justin Abando
-thanks: "Code and data are available at: LINK."
+title: "Visualizing risk factors of COVID-19 infections within Toronto"
+author: "Justin Abando"
+thanks: "Code and data are available at: https://github.com/justabando/COVID-19-Cases-in-Toronto"
 date: "`r Sys.time()`"
 date-format: "D MMMM YYYY"
-abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
+abstract: "Data related to COVID-19 cases sourced from OpenDataToronto was observed to draw conclusions of the impact of the COVID-19 pandemic in Toronto. It was found that the children and young adults are more often infected with COVID-19, however the older demographic proportionally suffers more despite having fewer recorded cases due to the observation of more deaths. Younger age groups contract the virus prominently in household settings, whereas older age groups contract it through healthcare institution outbreaks. In addition, it was found that a larger proportion of the adults and older demographics likely transmit the disease to their children. Overall, this data demonstrates the epidemiological impact that COVID-19 has brought to the Toronto community over the course of the past few years."
 format: pdf
 bibliography: references.bib
 ---
 
 ```{r}
-#| include: FALSE
+#| include: false
 
 knitr::opts_chunk$set(echo = TRUE)
+
+###Workplace setup###
 
 library(tidyverse)
 library(dplyr)
 library(janitor)
 library(opendatatoronto)
-```
+library(ggplot2)
+library(ggmosaic)
 
+###Cleaning###
+
+covid_cases<-
+  list_package_resources("64b54586-6180-4485-83eb-81e8fae3b8fe")|> 
+  filter(name == "COVID19 cases") |> 
+  get_resource()
+
+cleaned_covid_data <-
+  clean_names(covid_cases) #Making names easier to type
+
+###Refining data set###
+
+cleaned_covid_data <-
+  cleaned_covid_data |> 
+  select( #Reducing data set to display relevant columns pertaining to the analysis
+    age_group,
+    source_of_infection,
+    classification,
+    outcome
+  )
+
+cleaned_covid_data$source_of_infection |> #Finding possible sources of infection
+  unique() 
+
+cleaned_covid_data$age_group |> #Finding all possible age groupings
+  unique() 
+
+final_covid_data <- #Filtering out observations that had no information for specific variables
+  cleaned_covid_data |>
+  filter(
+    source_of_infection != "No Information") |>
+  filter(
+    age_group != "")
+
+```
 
 # Introduction
 
-You can and should cross-reference sections and sub-sections. For instance, Section \@ref(data). Quarto automatically makes the sections lower case and adds a dash to spaces to generate labels, for instance, Section \@ref(first-discussion-point). 
+Pandemics have occurred throughout history, and the most recent pandemic that took the entire world by storm was caused by the severe acute respiratory syndrome coronavirus 2, or SARS-CoV-2. Those infected with this virus would then be affected by COVID-19, which was first documented in China in December of 2019, but rapidly spread and developed throughout the world. In March of 2020, the World Health Organization classified the spread of COVID-19 as a global pandemic [@cucinotta2020]. The number of cases from then onward demonstrated the weaknesses in many national and local health infrastructures, as the number of confirmed cases reached as far as hundreds of millions across the world. Even after three years in 2023, the effects of the pandemic still loom with SARS-CoV-2 variants emerging and infecting populations as well. 
 
+Controlling the COVID-19 pandemic is an ongoing effort that has exerted its effect on public health over time in the past few years. As a result of the pandemic, COVID-19 has been subject to many epidemiological studies that asserted its impact in both small and large scale contexts. There are several risk factors at play that contribute to the growth of a pandemic such as COVID-19. Individual lifestyles and community environments play a role assessing the spread of the pandemic within Toronto communities. Established relationships exist between COVID-19 disease transmission and prominent risk factors such as social environment and age. Despite quarantining efforts, the pandemic managed to infect many people which requires some analysis to uncover the underlying reasons why COVID-19 was still able to spread to such a degree. 
 
+To better understand how to manage the COVID-19 pandemic's effect, analysis of its spread within large communities such as Toronto is useful. Larger cities are primed with a diverse set of circumstances, with many possible situations to potentially transmit or contract the disease. The data observations within this report were intended to communicate the spread of COVID-19 within specific settings, and its overall impact within the population. 
+
+It was found that children and younger adults were more susceptible in contracting COVID-19, whereas older adults and the elderly were more susceptible to death as a complication of COVID-19 despite having fewer cases relative to the younger demographic. Observation of the social settings in which COVID-19 could be transmissible demonstrated that children and young adults contract COVID-19 more through household settings and close contact, and elderly populations contracting it through healthcare institution outbreaks. Adults were shown to vary in their setting of disease contraction, and were spread relatively evenly through household contact, community, and healthcare outbreaks.
 
 # Data
 
-Our data is of penguins (@fig-bills).
+To investigate and visualize the impact of the possible risk factors, the tidyverse package [@wickham2019] and dplyr package [@wickham2023] were utilized through R [@rcoreteam2022] to organize and display relevant observations from the OpenDataToronto data set. OpenDataToronto is a public access database with municipal records consisting of topics which include, but are not limited to education, healthcare, crime, and the environment. To import the data set directly into R, the opendatatoronto package was used [@gelfand2022]. The data set was cleaned to be easier to work with in R [@rcoreteam2022] using the janitor package [@firke2021] and was visualized using the ggplot [@wickham2016] and ggmosaic [@jeppson2021] packages.
 
-```{r}
-#| label: fig-bills
-#| fig-cap: Bills of penguins
-#| echo: false
+## Data Collection
 
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = "none") +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
-```
+The data set containing information of COVID-19 cases is freely available through OpenDataToronto, with the most recent update of the data set being on January 25th, 2023.
 
-Talk more about it.
+The pertinent areas in the data set that were categorically measured and compared were:
 
-Also bills and their average (@fig-billssssss). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work.)
+- Age groups
+- Classification
+- Outcome
+- Sources of infection
 
-```{r}
-#| label: fig-billssssss
-#| fig-cap: More bills of penguins
-#| echo: false
-#| fig-width: 8
-#| fig-height: 4
+The age groups were divided in intervals of 10 years, with the exception of those that are 19 and younger and those that are 90 and older. Classification refers to whether or not the person was either likely or confirmed to be infected with COVID-19. Outcome refers to whether or not the person was able to recover from COVID-19, or died while infected by it. Sources of infection refer to the environmental settings that the person was present in when the disease was likely contracted to them.
 
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = FALSE) +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
-```
+During the cleaning process there were observations that were missing information on age groups and sources of infection, and were excluded to create uniform visualizations without missing data to prevent confusion.
 
-Talk way more about it. 
+## Data Observations
 
-
-
-# Model
-
-$$
-Pr(\theta | y) = \frac{Pr(y | \theta) Pr(\theta)}{Pr(y)}
-$$ {#eq-bayes}
-
-@eq-bayes seems useful, eh?
-
-Here's a dumb example of how to use some references: In paper we run our analysis in `R` [@citeR]. We also use the `tidyverse` which was written by @thereferencecanbewhatever If we were interested in baseball data then @citeLahman could be useful. 
-
-We can use maths by including latex between dollar signs, for instance $\theta$.
-
-
-# Results
-
-# Discussion
-
-## First discussion point
-
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
-
-## Second discussion point
-
-## Third discussion point
-
-## Weaknesses and next steps
-
-Weaknesses and next steps should also be included.
+An observation to be made is in regards to the frequency of Toronto residents that have caught, or likely caught COVID-19. More importantly, the specific age groups of those that caught the disease are of interest, as clues to its potential spread and impact can be visualized. A general trend can be drawn from this and is demonstrated in @fig-ageclass. 
 
 \newpage
+```{r}
+#| label: fig-ageclass
+#| fig-cap: Frequency of confirmed and probable COVID-19 cases based on age grouping.
+#| echo: false
 
-\appendix
+ggplot( 
+  final_covid_data, aes(
+    x = age_group, fill = classification)) + 
+  geom_bar(
+    position = "stack") + #Creating a stacked bar plot
+  theme_minimal() + #Using a simple theme
+  theme(axis.text.x=element_text( #Adjusting horizontal axis text to be easily readable
+    angle = 60, 
+    hjust = 1)) + 
+  labs(x = "Age Group", #Labeling the axes and fill section
+       y = "Frequency",
+       fill = "Classification")
 
-# Appendix {-}
+```
 
+The data leads to the suggestion that younger age groups and adults tend to exhibit more confirmed and probable cases of COVID-19 in comparison to older groups (@fig-ageclass). A sensible reason for this observation is that the younger groups have social obligations to attend to, whether it would be work or school. As such, they require to be outside in social settings more. If this data set was analyzed during quarantine, a more uniform distribution of cases would be visualized instead. However, this data set accounts for all currently recorded cases, so as schools and workplaces began to shift back into requiring physical presence, the frequency of cases are skewed as such.
 
-# Additional details
+In terms of the outcomes of those that were infected with COVID-19, the data suggests that older age groups are more susceptible to its fatal effects (@fig-ageoutcome).
 
+```{r}
+#| label: fig-ageoutcome
+#| fig-cap: Frequency of resolved or fatal COVID-19 outcomes based on age grouping.
+#| echo: false
 
+ggplot(
+  final_covid_data, aes(
+    x = age_group,
+    fill = outcome)) +
+  geom_bar( 
+    position = "stack") +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle = 60, hjust = 1)) +
+  labs(
+    x = "Age Group",
+    y = "Frequency",
+    fill = "Outcome")
+
+```
 \newpage
 
+As outlined in @fig-ageoutcome, the observations are still based on age groups, but instead focus on the outcome of disease progression. It was observed that most cases of COVID-19 are typically resolved within younger age groups and adults, however as the age groups increasingly get older, the prevalence of death begin to show. 
+
+The data suggests that the older demographic range (notably from 60 years and onward) are more susceptible to death due to COVID-19. However, it must be taken into account that there are likely other comorbidities present in an older demographic, meaning that there are certainly other health issues that can contribute to death as it becomes natural with age. As a result, the observation that COVID-19 is more lethal to older groups than younger groups would be true only in a vacuum, as there will be other factors that were not taken into account in this data set. For example, idiopathic pulmonary fibrosis (IPF) and chronic obstructive pulmonary disorder (COPD) are respiratory diseases that become increasingly more prevalent with age [@rojas2015]. The presence of such diseases puts those in the aging population at a much higher risk of contracting the COVID-19 as it is also a respiratory virus. Diseases that are linked to aging can be responsible for immunocompromising the elderly, leading to an increased risk serious complications such as death. 
+
+To take into account the possible sources of COVID-19 transmission within the population, data regarding the age groups of affected or potentially affected individuals are juxtaposed with the environmental setting in which they contracted it (@fig-agesource).
+
+```{r}
+#| label: fig-agesource
+#| fig-cap: The proportion affected COVID-19 individuals based on the infection source.
+#| echo: false
+#| warning: false
+#| out-width: 100%
+
+ggplot(
+  data = final_covid_data
+) +
+  geom_mosaic( #Creating a mosaic plot
+    aes(
+      x = product(source_of_infection, age_group),
+      fill = source_of_infection)) +
+  theme_mosaic() +
+  theme(
+    axis.text.x=element_text(
+      angle = 60,
+      hjust = 1)) +
+  theme( #Creating smaller text to prevent x-axis text overlap
+    text = element_text(
+      size = 8)) +
+  theme( #Removing the y-axis text as it is already visible in the fill section
+    axis.text.y=element_blank()) + 
+  labs(x = "Age Group",
+       y = "Source of Infection",
+       fill = "Source of Infection")
+
+```
+\newpage
+
+Drawing conclusions off @fig-agesource, there is a dominant proportion of young adults and children that contracted COVID-19 in a household setting. By comparison, adults and elderly were observed to contract the disease more commonly through community settings and through close contacts. The elderly above 80 years old are seen to exhibit a dominant trend of contracting the virus within a healthcare institution outbreak.
+
+An interesting observation can be seen with how children and young adults contract the virus most dominantly through household contact in comparison to any other age group (@fig-agesource). A reason for this observation can be explained that they contract COVID-19 through their parents, especially those that were considered essential workers during quarantine. This also explains why the adult demographic are infected more from community settings than children and the elderly. In general, there is a trend of cases originating from household contact and community settings becoming less common as the demographic gets older, and is compensated by an increase of cases originating from outbreaks in healthcare institutions.
+
+# Limitations
+
+There are limitations and bias that skew the accuracy of the results from the data presented, and as a result may affect some of the conclusions. A large consideration has to be made in the accuracy of the screening processes that determine if an individual has COVID-19. This data set was created when the COVID-19 cases first started to appear in early 2020, and outdated screening protocols were used to assess COVID-19 infection since then. As the pandemic progressed, we learned more about SARS-CoV-2 and the risk factors that lead to a higher susceptibility of being infected with it, and so more robust and accurate screening protocols were used in practice. To how it affects the data set and results, the entries up to certain points will contain infection data at the time when screening protocols were not optimal. As a result, the data will not be completely consistent and there may be some observations that were false negatives or even false positives. Despite this, all of the data was still used to generate visualizations and conclusions were still drawn from the data set to reflect the current information present within it. Regardless, the data still provides a general idea of the epidemiological impact of COVID-19.
+
+In addition, the data set excluded specific entries in the visualizations that were missing information of individuals in their age group or source of infection. This does affect the data as the visualizations are not completely representative of the entire data set, however this was done to maintain consistency in ensuring that every observation had the required information to be able to gather appropriate results.
+
+\newpage
 
 # References
-
 
