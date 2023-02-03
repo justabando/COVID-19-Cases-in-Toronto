@@ -1,35 +1,44 @@
 #### Preamble ####
-# Purpose: Clean the survey data downloaded from [...UPDATE ME!!!!!]
-# Author: Rohan Alexander [CHANGE THIS TO YOUR NAME!!!!]
-# Data: 3 January 2021
-# Contact: rohan.alexander@utoronto.ca [PROBABLY CHANGE THIS ALSO!!!!]
-# License: MIT
-# Pre-requisites: 
-# - Need to have downloaded the ACS data and saved it to inputs/data
-# - Don't forget to gitignore it!
-# - Change these to yours
-# Any other information needed?
-
+# Purpose: Cleaning the COVID-19 cases data set from OpenDataToronto
+# Author: Justin Abando
+# Data: 03 February 2023
+# Contact: justin.abando@mail.utoronto.ca
 
 #### Workspace setup ####
-# Use R Projects, not setwd().
-library(haven)
+
 library(tidyverse)
-# Read in the raw data. 
-raw_data <- readr::read_csv("inputs/data/raw_data.csv"
-                     )
-# Just keep some variables that may be of interest (change 
-# this depending on your interests)
-names(raw_data)
+library(dplyr)
+library(janitor)
 
-reduced_data <- 
-  raw_data %>% 
-  select(first_col, 
-         second_col)
-rm(raw_data)
-         
+###Cleaning###
 
-#### What's next? ####
+cleaned_covid_data <-
+  clean_names(covid_cases) #Making names easier to type
+
+###Refining data set###
+
+cleaned_covid_data <-
+  cleaned_covid_data |> 
+  select( #Reducing data set to display relevant columns pertaining to the analysis
+    age_group,
+    source_of_infection,
+    classification,
+    outcome
+  )
+
+cleaned_covid_data$source_of_infection |> #Finding possible sources of infection
+  unique() 
+
+cleaned_covid_data$age_group |> #Finding all possible age groupings
+  unique() 
+
+final_covid_data <- #Filtering out observations that had no information for specific variables
+  cleaned_covid_data |>
+  filter(
+    source_of_infection != "No Information") |>
+  filter(
+    age_group != "")
+
 
 
 
